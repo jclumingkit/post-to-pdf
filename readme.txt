@@ -1,6 +1,6 @@
 === Your Plugin Name ===
 Contributors: Juan Carlos Lumingkit
-Tags: Post to PDF, plugin
+Tags: Post to PDF, WordPress plugin
 Requires at least: 5.0
 Tested up to: 6.1
 Stable tag: 1.0
@@ -8,7 +8,7 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Description ==
-Let's website visitors to download a blog post as a PDF file.
+Allows website visitors to download a blog post as a PDF file.
 
 == Installation ==
 1. Upload the `post-to-pdf` to the `/wp-content/plugins/` directory.
