@@ -12,16 +12,25 @@ if (!defined('ABSPATH')) {
 
 require_once(plugin_dir_path(__FILE__) . 'lib/tcpdf/tcpdf.php');
 
-// add font
-$playfairDisplayBoldFont = plugin_dir_path(__FILE__) . 'fonts/PlayfairDisplay-Bold.ttf';
-$montserratMediumFont = plugin_dir_path(__FILE__) . 'fonts/Montserrat-Medium.ttf';
-
-TCPDF_FONTS::addTTFfont($playfairDisplayBoldFont, 'TrueTypeUnicode', '', 96);
-TCPDF_FONTS::addTTFfont($montserratMediumFont, 'TrueTypeUnicode', '', 96);
+// add font, run once
+// $playfairDisplaySemiBoldFont = plugin_dir_path(__FILE__) . 'fonts/PlayfairDisplay-SemiBold.ttf';
+// TCPDF_FONTS::addTTFfont($playfairDisplaySemiBoldFont, 'TrueTypeUnicode', '', 96);
 
 function add_pdf_download_button($content) {
     if (is_single()) {
-        $pdf_button = '<a href="' . esc_url(add_query_arg('download_pdf', 'true')) . '" class="pdf-download-button">Download as PDF</a>';
+        $buttonStyles = "display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        font-size: 20px; 
+        width: 300px; 
+        height: 43px; 
+        color: #ffffff; 
+        background-color: #7421C4; 
+        border-radius: 45px;";
+
+        $downloadUrl = esc_url(add_query_arg('download_pdf', 'true'));
+
+        $pdf_button = '<a style="' . $buttonStyles . '" href="' . $downloadUrl . '" class="pdf-download-button">Download</a>';
         return $content . $pdf_button;
     }
     return $content;
@@ -42,7 +51,7 @@ function generate_custom_toc() {
     $toc = '';
     foreach ($dom->getElementsByTagName('h2') as $index => $h2) {
         // Add the TOC item with numbering and line breaks
-        $toc .= ($index + 1) . '. ' . trim($h2->textContent) . "\n";
+        $toc .= ($index + 1) . '. ' . trim($h2->textContent) . "\n\n";
     }
 
     // Update the post content with anchor IDs added
@@ -55,106 +64,114 @@ function generate_custom_toc() {
 function generate_pdf() {
     if (isset($_GET['download_pdf']) && is_single()) {
         $post = get_post();
-
-        // Load TCPDF
         require_once(plugin_dir_path(__FILE__) . 'lib/tcpdf/tcpdf.php');
 
-        // Initialize TCPDF
-        $pdf = new TCPDF();
+        class CustomPDF extends TCPDF {
+            public function Footer() {
+                $this->SetY(-15);
+                $this->SetLineWidth(0.5);
+                $this->SetDrawColor(235, 223, 243);
+                $this->Line(10, $this->GetY(), $this->getPageWidth() - 10, $this->GetY());
+
+                $this->SetY(-12);
+                $image_file = plugin_dir_path(__FILE__) . 'images/footer-logo.png';
+                $this->Image($image_file, 10, $this->GetY(), 30);
+                
+                $this->SetFont('Montserrat Medium', '', 12);
+                $pageNumber = sprintf('%02d', $this->PageNo() - 2);
+                $this->SetX($this->getPageWidth() - 10);
+                $this->Cell(1, 6, $pageNumber, 0, 0, 'R');
+            }
+        }
+
+        // Initialize PDF
+        $pdf = new CustomPDF();
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor(get_the_author_meta('display_name', $post->post_author));
         $pdf->SetTitle($post->post_title);
-
-        // Set margins
-        $pdf->SetMargins(20, 20, 20);
+        $pdf->SetMargins(15, 15, 15);
         $pdf->SetAutoPageBreak(true, 20);
+        $pdf->setPrintHeader(false);
 
-        // Add cover page with background color
+        // Cover Page
         $pdf->AddPage();
-
-        // Add background image on the cover page
-        // get the current page break margin
+        $pdf->setPrintFooter(false);
         $bMargin = $pdf->getBreakMargin();
-        // get current auto-page-break mode
         $auto_page_break = $pdf->getAutoPageBreak();
-        // disable auto-page-break
         $pdf->SetAutoPageBreak(false, 0);
-        // set bacground image
         $coverPageBackgroundImage = plugin_dir_url(__FILE__) . 'images/cover-page-background.png';
         $pdf->Image($coverPageBackgroundImage, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0, false, true);
-        // restore auto-page-break status
         $pdf->SetAutoPageBreak($auto_page_break, $bMargin);
-        // set the starting point for the page content
         $pdf->setPageMark();
 
-        // Subtitle
         $pdf->SetFont('Montserrat Medium', '', 14);
         $pdf->SetTextColor(178, 107, 255);
         $pdf->SetXY(20, 70);
         $pdf->MultiCell(170, 20, "Kellé’s Thorpe Financial Guide", 0, 'C', 0, 1, '', '', true);
 
-        // Post Title
         $pdf->SetFont('PlayfairDisplay', 'B', 30);
         $pdf->SetTextColor(255, 255, 255);
         $pdf->SetXY(20, 80);
         $pdf->MultiCell(170, 20, $post->post_title, 0, 'C', 0, 1, '', '', true);
 
-        // Table of Contents Page
+        // Table of Content Page
         $pdf->AddPage();
-        // get the current page break margin
+        $pdf->setPrintFooter(false);
         $bMargin = $pdf->getBreakMargin();
-        // get current auto-page-break mode
         $auto_page_break = $pdf->getAutoPageBreak();
-        // disable auto-page-break
         $pdf->SetAutoPageBreak(false, 0);
-        // set bacground image
         $tocPageBackgroundImage = plugin_dir_url(__FILE__) . 'images/toc-background.png';
         $pdf->Image($tocPageBackgroundImage, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0, false, true);
-        // restore auto-page-break status
         $pdf->SetAutoPageBreak($auto_page_break, $bMargin);
-        // set the starting point for the page content
         $pdf->setPageMark();
 
-        // Title
+        $pdf->SetFont('PlayfairDisplay', 'B', 35);
         $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetFont('PlayfairDisplay', 'B', 18);
-        $pdf->Cell(0, 10, 'Table of Contents', 0, 1, 'L');
+        $pdf->SetXY(20, 50);
+        $pdf->Cell(0, 10, 'Table of content', 0, 1, 'L');
         $pdf->Ln(10);
 
-        // Table of Contents
         $toc = generate_custom_toc();
+        $pdf->SetFont('Montserrat Medium', '', 14);
+        $pdf->SetXY(20, 80);
+        $pdf->MultiCell(0, 10, isset($toc) ? $toc : 'No Table of Contents found.', 0, 'L', 0, 1);
 
-        // Check if the TOC is found
-        if (isset($toc)) {
-            $pdf->SetFont('PlayfairDisplay', 'B', 14);
-            $pdf->MultiCell(0, 10, $toc, 0, 'L', 0, 1);
-        } else {
-            // If TOC is not found
-            $pdf->SetFont('PlayfairDisplay', 'B', 14);
-            $pdf->MultiCell(0, 10, 'No Table of Contents found.', 0, 'L', 0, 1);
-        }
-
-        // Content Page
+        // Post Content Page
         $pdf->AddPage();
+        $pdf->setPrintFooter(true);
+        $content = explode("Table of Contents", $post->post_content)[1];
+        $styles = '
+            <style>
+                body, p, span, li, div {
+                    font-family: "Montserrat";
+                    font-size: 12px;
+                }
+
+                h2, h3, h4, h5, h6 {
+                    font-family: "PlayfairDisplay SemiBold";
+                }
+
+                h2 {
+                    font-size: 20px;
+                }
+
+                h3 {
+                    font-size: 16px;
+                }
+
+                h4 {
+                    font-size: 14px;
+                }
+            </style>
+        ';
+        $content = $styles . $content;
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('PlayfairDisplay', 'B', 20);
-        $pdf->MultiCell(0, 10, $post->post_title, 0, 'C', 0, 1);
-        $pdf->Ln(10);
+        $pdf->writeHTML($content, true, false, true, false, '');
 
-        // Blog Post Content
-        $pdf->SetFont('helvetica', '', 12);
-        $pdf->writeHTML($post->post_content, true, false, true, false, '');
-
-        // Output PDF
         $pdf->Output(sanitize_title($post->post_title) . '.pdf', 'D');
-
+        
         exit;
     }
 }
 add_action('template_redirect', 'generate_pdf');
-
-function pdf_download_enqueue_styles() {
-    wp_enqueue_style('pdf-download-style', plugins_url('/css/style.css', __FILE__));
-}
-add_action('wp_enqueue_scripts', 'pdf_download_enqueue_styles');
 
