@@ -8,7 +8,7 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Description ==
-A short description of what your plugin does.
+Let's website visitors to download a blog post as a PDF file.
 
 == Installation ==
 1. Upload the `post-to-pdf` to the `/wp-content/plugins/` directory.
