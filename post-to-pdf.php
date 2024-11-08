@@ -18,24 +18,46 @@ require_once(plugin_dir_path(__FILE__) . 'lib/tcpdf/tcpdf.php');
 
 function add_pdf_download_button($content) {
     if (is_single()) {
+        // Button styles
         $buttonStyles = "display: flex; 
         justify-content: center; 
         align-items: center; 
-        font-size: 20px; 
-        width: 300px; 
-        height: 43px; 
+        font-size: 18px; 
+        width: 250px; 
+        height: 36px; 
         color: #ffffff; 
         background-color: #7421C4; 
-        border-radius: 45px;";
+        border-radius: 45px; 
+        margin-top: 14px;";
 
+        // Generate the download URL
         $downloadUrl = esc_url(add_query_arg('download_pdf', 'true'));
 
+        // Button HTML
         $pdf_button = '<a style="' . $buttonStyles . '" href="' . $downloadUrl . '" class="pdf-download-button">Download</a>';
-        return $content . $pdf_button;
+
+        // Append button HTML to the end of the content
+        $content .= $pdf_button;
+
+        // Add inline JavaScript to move the button after `.elementor-toc__body`
+        $content .= "
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var tocBody = document.querySelector('.elementor-toc__body');
+                    var pdfButton = document.querySelector('.pdf-download-button');
+
+                    if (tocBody && pdfButton) {
+                        tocBody.insertAdjacentElement('afterend', pdfButton);
+                    }
+                });
+            </script>
+        ";
     }
     return $content;
 }
+
 add_filter('the_content', 'add_pdf_download_button');
+
 
 function generate_custom_toc() {
     // Get the raw post content
@@ -174,4 +196,3 @@ function generate_pdf() {
     }
 }
 add_action('template_redirect', 'generate_pdf');
-
