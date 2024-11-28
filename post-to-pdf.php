@@ -86,6 +86,22 @@ function generate_custom_toc() {
 function generate_pdf() {
     if (isset($_GET['download_pdf']) && is_single()) {
         $post = get_post();
+
+        // Cache directory and file path
+        $cache_dir = plugin_dir_path(__FILE__) . 'cache/';
+        if (!file_exists($cache_dir)) {
+            mkdir($cache_dir, 0755, true); // Create cache directory if it doesn't exist
+        }
+        $pdf_file = $cache_dir . sanitize_title($post->post_title) . '.pdf';
+
+        // Serve cached file if it exists
+        if (file_exists($pdf_file)) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . basename($pdf_file) . '"');
+            readfile($pdf_file);
+            exit;
+        }
+
         require_once(plugin_dir_path(__FILE__) . 'lib/tcpdf/tcpdf.php');
 
         class CustomPDF extends TCPDF {
@@ -122,7 +138,7 @@ function generate_pdf() {
         $auto_page_break = $pdf->getAutoPageBreak();
         $pdf->SetAutoPageBreak(false, 0);
         $coverPageBackgroundImage = plugin_dir_url(__FILE__) . 'images/cover-page-background.png';
-        $pdf->Image($coverPageBackgroundImage, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0, false, true);
+        $pdf->Image($coverPageBackgroundImage, 0, 0, 210, 297, 'PNG', '', '', false, 150, '', false, false, 0, false, true);
         $pdf->SetAutoPageBreak($auto_page_break, $bMargin);
         $pdf->setPageMark();
 
@@ -143,7 +159,7 @@ function generate_pdf() {
         $auto_page_break = $pdf->getAutoPageBreak();
         $pdf->SetAutoPageBreak(false, 0);
         $tocPageBackgroundImage = plugin_dir_url(__FILE__) . 'images/toc-background.png';
-        $pdf->Image($tocPageBackgroundImage, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0, false, true);
+        $pdf->Image($tocPageBackgroundImage, 0, 0, 210, 297, 'PNG', '', '', false, 150, '', false, false, 0, false, true);
         $pdf->SetAutoPageBreak($auto_page_break, $bMargin);
         $pdf->setPageMark();
 
@@ -167,6 +183,7 @@ function generate_pdf() {
                 body, p, span, li, div {
                     font-family: "Montserrat";
                     font-size: 12px;
+                    font-weight: 400;
                 }
 
                 h2, h3, h4, h5, h6 {
@@ -190,8 +207,11 @@ function generate_pdf() {
         $pdf->SetTextColor(0, 0, 0);
         $pdf->writeHTML($content, true, false, true, false, '');
 
-        $pdf->Output(sanitize_title($post->post_title) . '.pdf', 'D');
-        
+        $pdf->Output($pdf_file, 'F');
+        // Serve the file
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . basename($pdf_file) . '"');
+        readfile($pdf_file);
         exit;
     }
 }

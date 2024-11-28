@@ -1,4 +1,4 @@
-=== Your Plugin Name ===
+=== Post to PDF ===
 Contributors: Juan Carlos Lumingkit
 Tags: Post to PDF, WordPress plugin
 Requires at least: 5.0
